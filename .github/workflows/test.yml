@@ -314,6 +314,12 @@ jobs:
         # this job red and visible.
         run: npx tsc -p tsconfig.js.json --noEmit
 
+      - name: Assert every resources/js module is opted in
+        # The ratchet's other half (#1438): `checkJs` is off by design, so an
+        # unmarked file is silently unchecked. Every module must carry the
+        # marker; a new `.js` file without it fails here.
+        run: test -z "$(grep -L '^// @ts-check' resources/js/*.js)"
+
   e2e:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest

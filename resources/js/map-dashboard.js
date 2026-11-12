@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Map-dashboard Alpine component moved out of its `@script` block
  * (#1352, Step 3 / R3).
@@ -42,7 +43,9 @@ export function registerMapDashboard(Alpine) {
     // literals. Null-guarding and the server round-trip live here, in plain JS,
     // where that parser never runs.
     Alpine.data('unitDetailsModal', () => ({
+        /** @type {any} */
         unitId: null,
+        /** @type {any} */
         unitDetails: null,
         loading: false,
 
@@ -52,14 +55,14 @@ export function registerMapDashboard(Alpine) {
             // directive can never match it (it listens for `showunitdetails`).
             // A plain window listener keeps the server's event name intact and
             // stays outside the CSP expression parser entirely.
-            this.showUnitDetailsListener = (event) => {
+            (/** @type {any} */ (this)).showUnitDetailsListener = (/** @type {any} */ event) => {
                 this.openUnitDetails(event.detail[0].unitId);
             };
-            window.addEventListener('showUnitDetails', this.showUnitDetailsListener);
+            window.addEventListener('showUnitDetails', (/** @type {any} */ (this)).showUnitDetailsListener);
         },
 
         destroy() {
-            window.removeEventListener('showUnitDetails', this.showUnitDetailsListener);
+            window.removeEventListener('showUnitDetails', (/** @type {any} */ (this)).showUnitDetailsListener);
         },
 
         get unitName() {
@@ -83,7 +86,7 @@ export function registerMapDashboard(Alpine) {
             return this.unitDetails && this.unitDetails.error ? this.unitDetails.error : '';
         },
 
-        openUnitDetails(unitId) {
+        openUnitDetails(/** @type {any} */ unitId) {
             this.unitId = unitId;
             this.loading = true;
             this.unitDetails = null;
@@ -117,9 +120,13 @@ export function registerMapDashboard(Alpine) {
         // which breaks Leaflet's listener bookkeeping (issue #769). The map
         // itself is owned by the shared maps.map component
         // (Alpine.store('map')); this page only attaches its layers to it.
+        /** @type {any} */
         let map = null;
+        /** @type {Record<string, any>} */
         let layerGroups = {};
+        /** @type {any} */
         let moveTimer = null;
+        /** @type {any} */
         let diseasesPromise = null;
 
         // One definition of the region→unit boundary on the client. Mirrors
@@ -134,22 +141,28 @@ export function registerMapDashboard(Alpine) {
 
         return {
             activeLayers: ['units'],
+            /** @type {Record<string, any>} */
             filters: {
                 hardware_type: '',
                 ticket_priority: '',
                 ticket_status: '',
             },
             stats: { units: 0, hardware: 0, open_tickets: 0 },
+            /** @type {string | null} */
             currentBbox: null,
             apiBase: '',
             center: [0, 0],
             zoom: 8,
 
             // Disease layer (#1246). `diseaseLevel` is 'region' | 'unit' | null.
+            /** @type {any[]} */
             diseases: [],
+            /** @type {Record<string, any>} */
             disease: { id: null, from: '', to: '' },
             diseaseError: '',
+            /** @type {any[]} */
             diseaseLegend: [],
+            /** @type {any[]} */
             diseaseBreaks: [],
             diseaseLevel: null,
             diseaseLoading: false,
@@ -217,7 +230,7 @@ export function registerMapDashboard(Alpine) {
                     ['disease_date_from', 'from'],
                     ['disease_date_to', 'to'],
                 ].forEach(([elementId, key]) => {
-                    const input = document.getElementById(elementId);
+                    const input = /** @type {HTMLInputElement} */ (document.getElementById(elementId));
 
                     // `wire:navigate` re-runs init against the same DOM node;
                     // rebinding would stack duplicate listeners.
@@ -391,16 +404,17 @@ export function registerMapDashboard(Alpine) {
 
                     // Keep the previous level on screen: a failed refresh must
                     // not blank the map.
-                    this.diseaseError = error.message.startsWith('disease-map')
+                    const message = /** @type {any} */ (error).message;
+                    this.diseaseError = message.startsWith('disease-map')
                         ? 'بارگذاری لایه بیماری ناموفق بود.'
-                        : error.message;
+                        : message;
                 } finally {
                     if (requestId === this.diseaseRequestId) this.diseaseLoading = false;
                 }
             },
 
-            featuresMatchLevel(features, level) {
-                return features.every((feature) => {
+            featuresMatchLevel(/** @type {any[]} */ features, /** @type {any} */ level) {
+                return features.every((/** @type {any} */ feature) => {
                     const featureLevel = feature?.properties?.level;
 
                     return level === 'unit'
@@ -409,7 +423,7 @@ export function registerMapDashboard(Alpine) {
                 });
             },
 
-            applyDiseaseLevel(level, features, meta) {
+            applyDiseaseLevel(/** @type {any} */ level, /** @type {any[]} */ features, /** @type {Record<string, any>} */ meta) {
                 const isUnit = level === 'unit';
                 const targetGroup = isUnit ? layerGroups.diseaseUnits : layerGroups.diseaseRegions;
                 const sourceGroup = isUnit ? layerGroups.diseaseRegions : layerGroups.diseaseUnits;
@@ -453,7 +467,7 @@ export function registerMapDashboard(Alpine) {
                 });
             },
 
-            renderDiseaseFeatures(features, level, meta) {
+            renderDiseaseFeatures(/** @type {any[]} */ features, /** @type {any} */ level, /** @type {Record<string, any>} */ meta) {
                 if (features.length === 0) {
                     this.diseaseLegend = [];
                     this.diseaseBreaks = [];
@@ -466,7 +480,7 @@ export function registerMapDashboard(Alpine) {
                     this.diseaseLegend = [];
                     this.diseaseBreaks = [];
 
-                    features.forEach((feature) => {
+                    features.forEach((/** @type {any} */ feature) => {
                         if (feature?.geometry?.type !== 'Point') return;
 
                         const [lng, lat] = feature.geometry.coordinates;
@@ -499,7 +513,7 @@ export function registerMapDashboard(Alpine) {
                 // `class` per feature and `breaks` for the legend, so there is
                 // one quantile implementation, not two.
                 const breaks = Array.isArray(meta.breaks)
-                    ? meta.breaks.map((value) => this.toRate(value)).filter((value) => value !== null)
+                    ? meta.breaks.map((/** @type {any} */ value) => this.toRate(value)).filter((/** @type {any} */ value) => value !== null)
                     : [];
 
                 this.diseaseBreaks = breaks;
@@ -507,7 +521,7 @@ export function registerMapDashboard(Alpine) {
 
                 const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
                     pane: 'diseaseRegionPane',
-                    style: (feature) => {
+                    style: (/** @type {any} */ feature) => {
                         const rate = this.toRate(feature.properties.rate);
 
                         return {
@@ -521,7 +535,7 @@ export function registerMapDashboard(Alpine) {
                             fillOpacity: rate === null ? 0.35 : 0.75,
                         };
                     },
-                    onEachFeature: (feature, polygon) => {
+                    onEachFeature: (/** @type {any} */ feature, /** @type {any} */ polygon) => {
                         polygon.bindPopup(() => this.diseaseRegionPopup(feature.properties));
                     },
                 });
@@ -529,8 +543,8 @@ export function registerMapDashboard(Alpine) {
                 layerGroups.diseaseRegions.addLayer(geoLayer);
             },
 
-            buildDiseaseLegend(breaks, features) {
-                const hasRate = features.some((feature) => this.toRate(feature.properties.rate) !== null);
+            buildDiseaseLegend(/** @type {any[]} */ breaks, /** @type {any[]} */ features) {
+                const hasRate = features.some((/** @type {any} */ feature) => this.toRate(feature.properties.rate) !== null);
 
                 if (!hasRate) {
                     return [{
@@ -541,7 +555,7 @@ export function registerMapDashboard(Alpine) {
 
                 if (breaks.length === 0) return [];
 
-                const rows = breaks.map((upper, index) => ({
+                const rows = breaks.map((/** @type {any} */ upper, /** @type {any} */ index) => ({
                     color: DISEASE_COLORS[Math.min(index, DISEASE_COLORS.length - 1)],
                     label: index === 0
                         ? `≤ ${this.fa(upper, 1)}`
@@ -556,13 +570,13 @@ export function registerMapDashboard(Alpine) {
                 return rows.slice(0, DISEASE_COLORS.length);
             },
 
-            diseaseColor(classIndex) {
+            diseaseColor(/** @type {any} */ classIndex) {
                 const index = Number.isInteger(Number(classIndex)) ? Number(classIndex) : 0;
 
                 return DISEASE_COLORS[Math.min(Math.max(index, 0), DISEASE_COLORS.length - 1)];
             },
 
-            toRate(value) {
+            toRate(/** @type {any} */ value) {
                 if (value === null || value === undefined || value === '' || value === '—') return null;
 
                 const number = Number(value);
@@ -570,21 +584,21 @@ export function registerMapDashboard(Alpine) {
                 return Number.isFinite(number) ? number : null;
             },
 
-            fa(value, digits = 0) {
+            fa(/** @type {any} */ value, digits = 0) {
                 return Number(value).toLocaleString('fa-IR', {
                     minimumFractionDigits: digits,
                     maximumFractionDigits: digits,
                 });
             },
 
-            escapeHtml(value) {
+            escapeHtml(/** @type {any} */ value) {
                 const div = document.createElement('div');
                 div.textContent = value ?? '';
 
                 return div.innerHTML;
             },
 
-            diseaseRegionPopup(props) {
+            diseaseRegionPopup(/** @type {any} */ props) {
                 const rate = this.toRate(props.rate);
 
                 return `
@@ -596,7 +610,7 @@ export function registerMapDashboard(Alpine) {
                     </div>`;
             },
 
-            diseaseUnitPopup(props) {
+            diseaseUnitPopup(/** @type {any} */ props) {
                 return `
                     <div dir="rtl" class="map-popup-narrow">
                         <strong>${this.escapeHtml(props.name)}</strong><br>
@@ -604,7 +618,7 @@ export function registerMapDashboard(Alpine) {
                     </div>`;
             },
 
-            async fetchAndRender(url, layerGroup, type, headers) {
+            async fetchAndRender(/** @type {any} */ url, /** @type {any} */ layerGroup, /** @type {any} */ type, /** @type {any} */ headers) {
                 try {
                     const response = await fetch(url, { headers, credentials: 'include' });
                     const data = await response.json();
@@ -614,7 +628,7 @@ export function registerMapDashboard(Alpine) {
                 }
             },
 
-            async fetchStats(bbox, headers) {
+            async fetchStats(/** @type {any} */ bbox, /** @type {any} */ headers) {
                 try {
                     const response = await fetch(`${this.apiBase}/stats?bbox=${bbox}`, { headers, credentials: 'include' });
                     const data = await response.json();
@@ -624,13 +638,13 @@ export function registerMapDashboard(Alpine) {
                 }
             },
 
-            renderGeoJSON(geojson, layerGroup, type) {
+            renderGeoJSON(/** @type {any} */ geojson, /** @type {any} */ layerGroup, /** @type {any} */ type) {
                 if (!layerGroup) return;
                 layerGroup.clearLayers();
 
                 if (!geojson.features || geojson.features.length === 0) return;
 
-                geojson.features.forEach(feature => {
+                geojson.features.forEach((/** @type {any} */ feature) => {
                     if (!feature.geometry) return;
 
                     const props = feature.properties;
@@ -690,12 +704,13 @@ export function registerMapDashboard(Alpine) {
                 });
             },
 
-            getIconColor(type, props) {
+            getIconColor(/** @type {any} */ type, /** @type {any} */ props) {
                 if (type === 'unit') {
                     return '#3b82f6';
                 } else if (type === 'hardware') {
                     return props.shutdown ? '#ef4444' : '#22c55e';
                 } else if (type === 'ticket') {
+                    /** @type {Record<string, string>} */
                     const colors = {
                         'urgent': '#ef4444',
                         'high': '#f97316',
@@ -708,8 +723,8 @@ export function registerMapDashboard(Alpine) {
                 return '#6b7280';
             },
 
-            createPopup(type, props) {
-                const escapeHtml = (str) => {
+            createPopup(/** @type {any} */ type, /** @type {any} */ props) {
+                const escapeHtml = (/** @type {any} */ str) => {
                     const div = document.createElement('div');
                     div.textContent = str ?? '';
                     return div.innerHTML;
@@ -746,7 +761,8 @@ export function registerMapDashboard(Alpine) {
                 return '';
             },
 
-            getUnitTypeLabel(typeId) {
+            getUnitTypeLabel(/** @type {any} */ typeId) {
+                /** @type {Record<string, string>} */
                 const types = {
                     1: 'وزارت بهداشت', 2: 'دانشگاه علوم پزشکی', 3: 'معاونت بهداشت',
                     4: 'شبکه بهداشت', 5: 'مرکز خدمات جامع سلامت شهری',
@@ -756,7 +772,8 @@ export function registerMapDashboard(Alpine) {
                 return types[typeId] || 'نامشخص';
             },
 
-            getPriorityLabel(priority) {
+            getPriorityLabel(/** @type {any} */ priority) {
+                /** @type {Record<string, string>} */
                 const labels = {
                     'urgent': 'فوری', 'high': 'بالا', 'normal': 'عادی',
                     'medium': 'متوسط', 'low': 'پایین',
@@ -764,7 +781,8 @@ export function registerMapDashboard(Alpine) {
                 return labels[priority] || priority;
             },
 
-            getPriorityBadge(priority) {
+            getPriorityBadge(/** @type {any} */ priority) {
+                /** @type {Record<string, string>} */
                 const badges = {
                     'urgent': 'badge-error', 'high': 'badge-warning', 'normal': 'badge-info',
                     'medium': 'badge-primary', 'low': 'badge-success',
@@ -772,13 +790,13 @@ export function registerMapDashboard(Alpine) {
                 return badges[priority] || 'badge-ghost';
             },
 
-            onFeatureClick(type, props) {
+            onFeatureClick(/** @type {any} */ type, /** @type {any} */ props) {
                 if (type === 'unit') {
-                    this.$wire.dispatch('unitSelected', [props.id]);
+                    this.$wire.dispatch('unitSelected', /** @type {any} */ ([props.id]));
                 }
             },
 
-            toggleLayer(layer) {
+            toggleLayer(/** @type {any} */ layer) {
                 const isDisease = layer === 'diseases';
 
                 if (this.activeLayers.includes(layer)) {
@@ -836,12 +854,12 @@ export function registerMapDashboard(Alpine) {
 
                     this.loadLayers();
                 }
-                this.$wire.dispatch('layerToggled', [layer]);
+                this.$wire.dispatch('layerToggled', /** @type {any} */ ([layer]));
             },
 
-            setFilter(key, value) {
+            setFilter(/** @type {any} */ key, /** @type {any} */ value) {
                 this.filters[key] = value;
-                this.$wire.dispatch('filterChanged', [this.filters]);
+                this.$wire.dispatch('filterChanged', /** @type {any} */ ([this.filters]));
                 this.loadLayers();
             },
         };
