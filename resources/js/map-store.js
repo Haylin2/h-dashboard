@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Leaflet lifecycle owner (issue #028).
  *
@@ -21,16 +22,19 @@
 
 const MAP_ID = 'map';
 
+/** @param {HTMLElement} el */
 function isConnected(el) {
   return !!el && document.body.contains(el);
 }
 
+/** @param {any} instance */
 function containerOf(instance) {
   return instance && typeof instance.getContainer === 'function'
     ? instance.getContainer()
     : null;
 }
 
+/** @param {any} instance */
 function destroyInstance(instance) {
   try {
     // Drop handlers first: a removed instance that still reacts to window
@@ -61,13 +65,17 @@ function destroyInstance(instance) {
  * The store keeps only plain data (config, pending callbacks) and the
  * lifecycle API; get()/use()/onReady() hand out the raw instance.
  */
+/** @type {any} */
 let instance = null;
+/** @type {HTMLElement | null} */
 let containerEl = null;
 
 /** @param {AlpineStatic} Alpine */
 export function registerMapStore(Alpine) {
   Alpine.store(MAP_ID, {
+    /** @type {Record<string, any>} */
     config: {},
+    /** @type {Array<(map: any) => void>} */
     pending: [],
 
     /** Called by the map component so late `use()` calls build the right map. */
@@ -86,6 +94,7 @@ export function registerMapStore(Alpine) {
      * Returns null (with a warning) when `el` is not in the document — a loud
      * no-op, never a silent bind to the wrong map.
      */
+    /** @param {HTMLElement} el */
     use(el) {
       if (!isConnected(el)) {
         console.warn('[map] container is not in the document; no map created', el);
@@ -124,6 +133,7 @@ export function registerMapStore(Alpine) {
      * otherwise as soon as the map component creates it. This removes the
      * script-ordering race between the host page and maps.map entirely.
      */
+    /** @param {(map: any) => void} callback */
     onReady(callback) {
       const live = this.get();
       if (live) {
@@ -134,6 +144,7 @@ export function registerMapStore(Alpine) {
     },
 
     flush() {
+      /** @type {Array<(map: any) => void>} */
       const queued = this.pending;
       this.pending = [];
       queued.forEach((callback) => {
@@ -150,7 +161,7 @@ export function registerMapStore(Alpine) {
      * already navigated away from killing the NEW page's map; pass
      * { force: true } to destroy regardless.
      */
-    release(el, { force = false } = {}) {
+    release(/** @type {HTMLElement | null} */ el, /** @type {{ force?: boolean }} */ { force = false } = {}) {
       if (!instance) return;
       if (!force && el && containerEl !== el) return;
 

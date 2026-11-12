@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Dashboard + HR-dashboard Highcharts moved out of `@script` blocks
  * (#1352, Step 3 / R3).
@@ -35,18 +36,21 @@
 const themeListenersRegistered = new Set();
 const hrHooksRegistered = new Set();
 const hrOnRegistered = new Set();
+/** @type {any} */
 let hrChartData = null;
 
+/** @param {Element} element */
 function componentFor(element) {
   const root = element.closest('[wire\\:id]');
   if (!root || typeof window.Livewire === 'undefined') {
     return null;
   }
-  return window.Livewire.find(root.getAttribute('wire:id'));
+  return window.Livewire.find(/** @type {string} */ (root.getAttribute('wire:id')));
 }
 
 /* ---------------- main dashboard: ticket charts ---------------- */
 
+/** @type {Record<string, string>} */
 const statusLabels = { created: 'جدید', accepted: 'پذیرفته شده', completed: 'تکمیل شده', forwarded: 'ارجاع شده', rejected: 'رد شده' };
 
 // #1224: series colours follow the active theme family. daisyUI's
@@ -75,6 +79,7 @@ const CHART_COLORS = {
   },
 };
 
+/** @returns {Record<string, string>} */
 function chartPalette() {
   const style = getComputedStyle(document.documentElement);
   const scheme = (style.colorScheme || '').includes('dark') ? 'dark' : 'light';
@@ -84,6 +89,7 @@ function chartPalette() {
   };
 }
 
+/** @param {() => void} callback @param {number} [attempts] */
 function waitForHighcharts(callback, attempts = 0) {
   if (typeof window.Highcharts !== 'undefined') {
     callback();
@@ -96,13 +102,14 @@ function waitForHighcharts(callback, attempts = 0) {
   setTimeout(() => waitForHighcharts(callback, attempts + 1), 50);
 }
 
+/** @param {HTMLElement} container */
 function destroyChartEl(container) {
   if (!container || typeof Highcharts === 'undefined') {
     return;
   }
   const existing = Highcharts.charts?.find((c) => c && c.renderTo === container);
   if (existing) {
-    existing.destroy();
+    /** @type {any} */ (existing).destroy();
   }
   container.innerHTML = '';
 }
@@ -110,6 +117,7 @@ function destroyChartEl(container) {
 function renderTicketCharts() {
   waitForHighcharts(() => {
     const block = document.getElementById('dashboard-chart-data');
+    /** @type {Record<string, any>} */
     let payload = {};
     try {
       payload = block ? JSON.parse(block.textContent || '{}') : {};
@@ -193,6 +201,7 @@ function hrPalette() {
   const root = document.documentElement;
   const style = getComputedStyle(root);
   const scheme = (style.colorScheme || '').includes('dark') ? 'dark' : 'light';
+/** @param {string} name @param {string} fallback */
   const token = (name, fallback) => style.getPropertyValue(name).trim() || fallback;
   return {
     colors: HR_CHART_COLORS[scheme],
@@ -201,6 +210,7 @@ function hrPalette() {
   };
 }
 
+/** @param {string} id */
 function destroyHrChart(id) {
   const container = document.getElementById(id);
   if (!container || typeof Highcharts === 'undefined') {
@@ -208,11 +218,12 @@ function destroyHrChart(id) {
   }
   const existing = Highcharts.charts?.find((c) => c && c.renderTo === container);
   if (existing) {
-    existing.destroy();
+    /** @type {any} */ (existing).destroy();
   }
   container.innerHTML = '';
 }
 
+/** @param {string} id @param {any[]} rows @param {string} color @param {any} palette */
 function renderHrBar(id, rows, color, palette) {
   destroyHrChart(id);
   const data = (rows || [])
@@ -277,6 +288,7 @@ async function renderHrCharts() {
   paintHrCharts();
 }
 
+/** @param {() => void} fn */
 function waitForHighchartsHr(fn) {
   if (typeof Highcharts !== 'undefined') {
     return fn();
