@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Zabbix signal gauges + the shared wireless poller, moved out of
  * `@script` blocks (#1352, Step 3 / R3).
@@ -57,12 +58,17 @@ export function registerSignalGauge(Alpine) {
     frequencyUnit: 'MHz',
     responseTimeUnit: 'ms',
     title: '',
+    /** @type {number | null} */
     signal: null,
+    /** @type {number | null} */
     frequency: null,
+    /** @type {number | null} */
     responseTime: null,
     loading: false,
+    /** @type {string | null} */
     error: null,
     circumference: 2 * Math.PI * 45,
+    /** @type {null | (() => void)} */
     bound: null,
 
     init() {
@@ -168,6 +174,7 @@ export function setupZabbixPoller() {
   if (!block) {
     return;
   }
+  /** @type {string[]} */
   let itemIds = [];
   try {
     itemIds = JSON.parse(block.textContent || '[]');
@@ -189,7 +196,7 @@ export function setupZabbixPoller() {
   state.loaded = false;
 
   const publish = () => {
-    state.subscribers.slice().forEach((subscriber) => subscriber());
+    state.subscribers.slice().forEach((/** @type {() => void} */ subscriber) => subscriber());
   };
 
   const load = async () => {
@@ -202,6 +209,7 @@ export function setupZabbixPoller() {
 
     try {
       const token = localStorage.getItem('token');
+      /** @type {Record<string, string>} */
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       const values = {};
@@ -253,7 +261,7 @@ export function setupZabbixPoller() {
       // is the same "cannot reach the server" condition as a 503.
       state.error = e instanceof TypeError
         ? 'دسترسی به سرور مقدور نمی باشد'
-        : (e.message || 'خطا در دریافت');
+        : (/** @type {Error} */ (e).message || 'خطا در دریافت');
     } finally {
       state.loading = false;
       state.loaded = true;

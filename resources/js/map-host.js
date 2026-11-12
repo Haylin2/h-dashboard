@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * maps/map.blade.php component logic (#1352 CSP-compat).
  *
@@ -24,6 +25,7 @@
 /** @param {AlpineStatic} Alpine */
 export function registerMapHost(Alpine) {
   Alpine.data('mapHost', () => ({
+    /** @type {null | (() => void)} */
     _invalidate: null,
 
     init() {
