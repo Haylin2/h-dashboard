@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Remaining map host pages moved out of `@script` blocks (#1352,
  * Step 3 / R3): point markers, unit boundaries, and the unit
@@ -49,6 +50,7 @@
  * module re-runs setup on `livewire:init` / `livewire:navigated`.
  */
 
+/** @type {any} */
 let unitMapCurrent = null;
 let unitListenersRegistered = false;
 let unitDelegationRegistered = false;
@@ -56,6 +58,7 @@ let boundaryListenerRegistered = false;
 
 /* ---------------- maps/point ---------------- */
 
+/** @type {Record<number, string>} */
 const typeIcons = {
   4: '/icons/network.svg',
   5: '/icons/urban-health.svg',
@@ -79,6 +82,7 @@ const defaultIcon = '/icons/default.svg';
 
 // Perf: one L.icon per type (was: a fresh L.icon for every marker).
 const iconCache = new Map();
+/** @param {number} typeId */
 function getIcon(typeId) {
   let icon = iconCache.get(typeId);
   if (!icon) {
@@ -102,7 +106,7 @@ function setupPointMap() {
   }
   const root = marker.closest('[wire\\:id]');
   const component = root && typeof window.Livewire !== 'undefined'
-    ? window.Livewire.find(root.getAttribute('wire:id'))
+    ? window.Livewire.find(/** @type {string} */ (root.getAttribute('wire:id')))
     : null;
   if (!component) {
     return;
@@ -134,10 +138,11 @@ function setupPointMap() {
     // instead of embedding a second copy of the payload in the page
     // (issue #776).
     const allLocations = component.get('location') ?? [];
-    const byId = new Map(allLocations.map((l) => [l.id, l]));
+    const byId = new Map(allLocations.map((/** @type {any} */ l) => [l.id, l]));
 
     // Perf: memoised depth (was: a full re-scan per node — O(N·depth)).
     const depthCache = new Map();
+    /** @param {any} id @returns {number} */
     const depthOf = (id) => {
       if (depthCache.has(id)) {
         return depthCache.get(id);
@@ -148,6 +153,7 @@ function setupPointMap() {
         return 0;
       }
       depthCache.set(id, 0); // placeholder — also breaks parent cycles
+      /** @type {number} */
       const depth = depthOf(node.parent_id) + 1;
       depthCache.set(id, depth);
       return depth;
@@ -158,8 +164,8 @@ function setupPointMap() {
     // and every visible unit's ancestors stay visible so the connection
     // lines keep their parent markers.
     function visibleLocations() {
-      const selected = (group) => new Set(
-        [...document.querySelectorAll(`[data-filter-group="${group}"] input[type="checkbox"]:checked`)]
+      const selected = (/** @type {string} */ group) => new Set(
+        /** @type {HTMLInputElement[]} */ ([...document.querySelectorAll(`[data-filter-group="${group}"] input[type="checkbox"]:checked`)])
           .map((cb) => Number(cb.value)),
       );
       const regions = selected('regions');
@@ -190,11 +196,13 @@ function setupPointMap() {
     // filter switch. Markers go first (they are what the user waits for),
     // in requestAnimationFrame slices, so the page never locks up.
     let renderToken = 0;
+    /** @param {any[]} locations */
     function renderMarkers(locations) {
       const token = ++renderToken;
       markersLayer.clearLayers();
       linesLayer.clearLayers();
 
+      /** @type {any[]} */
       const linePairs = [];
       for (const loc of locations) {
         if (!loc.parent_id) {
@@ -259,7 +267,7 @@ function setupPointMap() {
     // Filter toggles re-render locally — no Livewire round-trip.
     // Dataset guard: re-running setup on the same DOM must not stack
     // duplicate listeners on the same checkbox.
-    document.querySelectorAll('.controls-panel input[type="checkbox"]').forEach((cb) => {
+    /** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('.controls-panel input[type="checkbox"]')).forEach((cb) => {
       if (cb.dataset.pointBound) {
         return;
       }
@@ -271,15 +279,20 @@ function setupPointMap() {
 
 /* ---------------- maps/unit ---------------- */
 
+/** @type {Record<string, any>} */
 let geojsonLayers = {};
 // #1188: the geometry is NOT published here. This script runs once, on the
 // first render, when no filter is picked yet — so this was always an empty
 // array. The unit rows (with their geometry) arrive with the
 // `units-updated` event and are handed to `allUnits` by its listener below.
+/** @type {any[]} */
 let allUnits = [];
+/** @type {Record<string, any>} */
 let countyLayers = {};
+/** @type {Record<string, any>} */
 let activeToggles = {};
 
+/** @param {any} map */
 function clearAllLayers(map) {
   Object.keys(geojsonLayers).forEach(function (id) {
     map.removeLayer(geojsonLayers[id]);
@@ -287,6 +300,7 @@ function clearAllLayers(map) {
   });
 }
 
+/** @param {any} map */
 function clearCountyLayers(map) {
   Object.keys(countyLayers).forEach(function (id) {
     map.removeLayer(countyLayers[id]);
@@ -294,6 +308,7 @@ function clearCountyLayers(map) {
   });
 }
 
+/** @param {any} map @param {any[]} counties */
 function showCountyBoundaries(map, counties) {
   clearCountyLayers(map);
   counties.forEach(function (c) {
@@ -310,6 +325,7 @@ function showCountyBoundaries(map, counties) {
   });
 }
 
+/** @param {any} map @param {any[]} units */
 function showUnits(map, units) {
   units.forEach(function (unit) {
     if (unit.geojson && !geojsonLayers[unit.id]) {
@@ -328,18 +344,19 @@ function showUnits(map, units) {
 
 function syncToggleStates() {
   document.querySelectorAll('[wire\\:key^="unit-"]').forEach(function (el) {
-    const input = el.querySelector('input[type="checkbox"]');
+    const input = /** @type {HTMLInputElement | null} */ (el.querySelector('input[type="checkbox"]'));
     if (!input) {
       return;
     }
     const key = el.getAttribute('wire:key');
-    const unitId = parseInt(key.replace('unit-', ''), 10);
+    const unitId = parseInt(/** @type {string} */ (key).replace('unit-', ''), 10);
     if (activeToggles[unitId]) {
       input.checked = true;
     }
   });
 }
 
+/** @param {number} unitId */
 function toggleGeoJsonOn(unitId) {
   const map = unitMapCurrent;
   if (!map) {
@@ -363,6 +380,7 @@ function toggleGeoJsonOn(unitId) {
   }
 }
 
+/** @param {number} unitId */
 function toggleGeoJsonOff(unitId) {
   const map = unitMapCurrent;
   delete activeToggles[unitId];
@@ -385,12 +403,12 @@ function setupUnitMap() {
     // `x-on:change` directive — a global-function call, dead under
     // the CSP build. Delegation replaces it (county pattern).
     document.addEventListener('change', (event) => {
-      const wrap = event.target.closest('[data-unit-id]');
+      const wrap = /** @type {HTMLElement | null} */ (/** @type {Element} */ (event.target).closest('[data-unit-id]'));
       if (!wrap) {
         return;
       }
-      const input = wrap.querySelector('input[type="checkbox"]');
-      const unitId = parseInt(wrap.dataset.unitId, 10);
+      const input = /** @type {HTMLInputElement | null} */ (wrap.querySelector('input[type="checkbox"]'));
+      const unitId = parseInt(/** @type {string} */ (wrap.dataset.unitId), 10);
       if (!input || !Number.isFinite(unitId)) {
         return;
       }
@@ -440,10 +458,10 @@ function setupUnitMap() {
     unitMapCurrent = map;
 
     window.toggleGeoJsonOn = function (unitId) {
-      toggleGeoJsonOn(unitId);
+      toggleGeoJsonOn(/** @type {number} */ (unitId));
     };
     window.toggleGeoJsonOff = function (unitId) {
-      toggleGeoJsonOff(unitId);
+      toggleGeoJsonOff(/** @type {number} */ (unitId));
     };
   });
 }
@@ -481,7 +499,7 @@ function setupUnitsEditMap() {
     const el = document.getElementById('unitMap');
     const root = el ? el.closest('[wire\\:id]') : null;
     return root && typeof window.Livewire !== 'undefined'
-      ? window.Livewire.find(root.getAttribute('wire:id'))
+      ? window.Livewire.find(/** @type {string} */ (root.getAttribute('wire:id')))
       : null;
   }
 
@@ -537,7 +555,7 @@ function setupUnitsEditMap() {
         // Add the INDIVIDUAL polygon layers (eachLayer), never the L.GeoJSON
         // group itself: updateGeojson() iterates getLayers() and only handles
         // L.Polygon instances.
-        existingLayer.eachLayer(function (layer) {
+        existingLayer.eachLayer(function (/** @type {any} */ layer) {
           drawnItems.addLayer(layer);
         });
 
@@ -567,7 +585,7 @@ function setupUnitsEditMap() {
     });
     unitMap.addControl(drawControl);
 
-    unitMap.on('draw:created', function (event) {
+    unitMap.on('draw:created', function (/** @type {any} */ event) {
       // #702: a unit has exactly one boundary, so a newly drawn polygon
       // replaces the previous one. The old layer now lives inside
       // `drawnItems`, so clearing the group replaces the previous
@@ -599,8 +617,9 @@ function setupUnitsEditMap() {
       window._mapGeojson = null;
       return;
     }
+    /** @type {any[]} */
     const coords = [];
-    layers.forEach(function (layer) {
+    layers.forEach(function (/** @type {any} */ layer) {
       if (layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) {
         // #702: getLatLngs() is [ring] for a plain polygon but [[ring]] for
         // one built from a MultiPolygon geometry. Normalise to the real
@@ -666,7 +685,7 @@ function setupUnitsEditMap() {
   // the whole setup here — which skipped the button binding above on
   // every re-run (the button is replaced on navigate while #unitMap
   // survives via wire:ignore), so the binding must run every time.
-  if (container._leaflet_id) {
+  if (/** @type {any} */ (container)._leaflet_id) {
     return;
   }
 
