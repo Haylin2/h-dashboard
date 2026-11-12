@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * App-owned Alpine components (#1352 CSP-compat).
  *
@@ -19,6 +20,7 @@
  * ternaries, and :class/:style literal bindings.
  */
 
+/** @param {string} key */
 function readStoredTheme(key) {
   const raw = localStorage.getItem(key);
   if (raw == null) return null;
@@ -101,6 +103,7 @@ export function registerAppComponents(Alpine) {
   // component's `$this->js('toast({...})')`. The inline script is deleted;
   // `window.toast` is undefined BY DESIGN (do not assert it is a function).
   Alpine.data('globalToast', () => ({
+    /** @param {any} payload */
     toast(payload) {
       window.dispatchEvent(new CustomEvent('mary-toast', { detail: payload }));
     },
@@ -114,6 +117,7 @@ export function registerAppComponents(Alpine) {
     // The notify helpers are Livewire component methods that only toast, so
     // every failure path must also reset the bound property or the toggle
     // stays ON after a denial / an unsupported browser.
+    /** @param {boolean} checked */
     toggleBrowserNotifications(checked) {
       if (!checked) return; // user un-checked: plain uncheck, no toast
       if (typeof Notification === 'undefined') {
@@ -132,8 +136,11 @@ export function registerAppComponents(Alpine) {
 
   Alpine.data('cspToast', () => ({
     show: false,
+    /** @type {any} */
     toast: {},
+    /** @type {any} */
     timer: null,
+    /** @type {any} */
     interval: null,
 
     maxProgress: 100,
@@ -143,6 +150,7 @@ export function registerAppComponents(Alpine) {
     startTime: 0,
     remaining: 0,
 
+    /** @type {null | ((event: any) => void)} */
     _toastListener: null,
 
     init() {
@@ -158,6 +166,7 @@ export function registerAppComponents(Alpine) {
       this.clearTimers();
     },
 
+    /** @param {any} toast */
     start(toast) {
       this.clearTimers();
 
@@ -249,6 +258,7 @@ export function registerAppComponents(Alpine) {
   Alpine.data('helpModal', () => ({
     helpSection: 'dashboard',
 
+    /** @type {null | ((event: any) => void)} */
     _helpListener: null,
 
     init() {
@@ -276,6 +286,7 @@ export function registerAppComponents(Alpine) {
   // Dashboard stats refresh (livewire/dashboard.blade.php).
   Alpine.data('dashboardRefresh', () => ({
     interval: 0,
+    /** @type {any} */
     timer: null,
 
     init() {
@@ -301,12 +312,17 @@ export function registerAppComponents(Alpine) {
   Alpine.data('unitTreePicker', () => ({
     search: '',
     open: false,
+    /** @type {Record<string, boolean>} */
     expanded: {},
+    /** @type {any[]} */
     matchedIds: [],
+    /** @type {any[]} */
     autoExpanded: [],
+    /** @type {any[]} */
     flat: [],
     multiple: false,
     alwaysOpen: false,
+    /** @type {any} */
     selected: null,
     modelName: '',
 
@@ -326,21 +342,23 @@ export function registerAppComponents(Alpine) {
       if (this.modelName) {
         this.selected = this.$wire[this.modelName];
         this.$watch(
-          () => this.$wire[this.modelName],
-          (value) => { this.selected = value; },
+          /** @type {any} */ (() => this.$wire[this.modelName]),
+          /** @param {any} value */ (value) => { this.selected = value; },
         );
       }
       this.$watch(
-        () => this.search,
+        /** @type {any} */ (() => this.search),
         () => this.expandForSearch(),
       );
     },
 
+    /** @param {any} id */
     isSelected(id) {
       if (this.multiple) return Array.isArray(this.selected) && this.selected.map(Number).includes(Number(id));
       return String(this.selected) === String(id);
     },
 
+    /** @param {any} id */
     toggle(id) {
       if (this.multiple) {
         const arr = Array.isArray(this.selected) ? this.selected : [];
@@ -353,30 +371,36 @@ export function registerAppComponents(Alpine) {
       }
     },
 
+    /** @param {any} id */
     toggleExpanded(id) {
       this.expanded[id] = !this.expanded[id];
     },
 
+    /** @param {any} id */
     remove(id) {
       if (this.multiple) {
-        this.$wire[this.modelName] = (this.selected ?? []).filter((x) => String(x) !== String(id));
+        this.$wire[this.modelName] = (this.selected ?? []).filter((/** @type {any} */ x) => String(x) !== String(id));
       } else {
         this.$wire[this.modelName] = null;
         if (!this.alwaysOpen) this.open = false;
       }
     },
 
+    /** @param {any} id */
     nameOf(id) { return this.flat.find((u) => String(u.id) === String(id))?.name ?? '-'; },
 
+    /** @param {any} id */
     isMatched(id) {
       return this.matchedIds.some((m) => String(m) === String(id));
     },
 
+    /** @param {any} id */
     parentOf(id) {
       const u = this.flat.find((x) => String(x.id) === String(id));
       return u && u.parent_id !== null && u.parent_id !== undefined ? u.parent_id : null;
     },
 
+    /** @param {any} id */
     rowClass(id) {
       return (this.isSelected(id) ? 'font-bold text-primary' : '') + (this.isMatched(id) ? 'bg-warning/25' : '');
     },
